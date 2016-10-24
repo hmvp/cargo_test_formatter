@@ -1,5 +1,5 @@
 [root]
-name = "cargo_test_xunit_parser"
+name = "cargo_test_formatter"
 version = "0.1.0"
 dependencies = [
  "RustyXML 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
