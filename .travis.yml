@@ -1,0 +1,23 @@
+language: rust
+
+rust:
+  - nightly
+  - beta
+  - stable
+
+before_script:
+  - pip install 'travis-cargo<0.2' --user && export PATH=$HOME/.local/bin:$PATH
+
+script:
+  - travis-cargo --only nightly build -- 
+  - travis-cargo --only stable  test  -- 
+  - travis-cargo --only beta    test  -- 
+  - travis-cargo --only nightly test  -- 
+  - travis-cargo bench
+  - travis-cargo --only stable doc --
+
+after_success:
+  - travis-cargo bench
+
+sudo: false
+

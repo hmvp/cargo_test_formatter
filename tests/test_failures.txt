@@ -1,0 +1,17 @@
+failures:
+
+---- tests::test_failing stdout ----
+	Oh noes!!
+thread 'tests::test_failing' panicked at 'assertion failed: false', src/main.rs:250
+note: Run with `RUST_BACKTRACE=1` for a backtrace.
+
+---- tests::test_failing2 stdout ----
+	Again!!
+thread 'tests::test_failing2' panicked at 'assertion failed: `(left == right)` (left: `no`, right: `yes`)', src/main.rs:255
+
+
+failures:
+    tests::test_failing
+    tests::test_failing2
+    tests::test_test_failures
+

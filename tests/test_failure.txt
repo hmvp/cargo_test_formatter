@@ -1,0 +1,6 @@
+
+---- tests::test_failing2 stdout ----
+	Again!!
+thread 'tests::test_failing2' panicked at 'assertion failed: `(left == right)` (left: `no`, right: `yes`)', src/main.rs:243
+note: Run with `RUST_BACKTRACE=1` for a backtrace.
+
