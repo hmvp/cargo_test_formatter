@@ -126,9 +126,9 @@ named!(test_suite<Vec<TestModule> >, terminated!(
 
 
 pub fn parse(string: &[u8]) -> Result<Vec<TestModule>, String> {
-    match test_suite(&string) {
-        IResult::Done(b"", result) => return Ok(result),
-        r => return Err(format!("parse failure: {:?}", r).to_string()),
+    match test_suite(string) {
+        IResult::Done(b"", result) => Ok(result),
+        r => Err(format!("parse failure: {:?}", r).to_string()),
     }
 }
 

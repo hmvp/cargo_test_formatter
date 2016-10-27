@@ -4,10 +4,10 @@ extern crate xml;
 
 use std::io;
 use std::fs::File;
+use std::io::Write;
 
 mod parser;
-
-use parser::parse;
+mod junit;
 
 
 
@@ -36,52 +36,7 @@ fn parse_data<'a, T>(reader: &mut T) -> Vec<u8>
     buffer
 }
 
-fn format(data: Vec<TestModule>) -> xml::Element {
-    let mut output = xml::Element::new("testsuites".into(), None, vec![]);
 
-    for module in data {
-        let attr = vec![
-            ("failures".into(), None, format!("{}",module.4).into()),
-            ("skip".into(), None, format!("{}",module.6).into()),
-            ("tests".into(), None, format!("{}",module.1.len()).into()),
-        ];
-        output.tag(xml::Element::new("testsuite".into(), None, attr));
-
-        for test in module.1 {
-            let (basename, classname) = test.0
-                .rfind("::")
-                .map(|i| (test.0[2 + i..].into(), test.0[..i].replace("::", ".")))
-                .unwrap_or((test.0, "::".into()));
-
-            let attr = vec![
-                       ("name".into(), None, basename.into()),
-                       ("classname".into(), None, classname.into()),
-            ];
-
-            let test_xml = output.tag(xml::Element::new("testcase".into(), None, attr));
-
-            if test.1 == TestResult::Ignored {
-                test_xml.tag(xml::Element::new("skipped".into(), None, vec![]));
-            } else if test.1 == TestResult::Failed {
-                for failure in &module.2 {
-                    if failure.0 == test.0 {
-                        test_xml.tag(xml::Element::new("failure".into(),
-                                                   None,
-                                                   vec![
-                                    ("message".into(), None, failure.2.into()),
-                                    ]))
-                            .cdata(failure.3.into());
-                        test_xml.tag(xml::Element::new("system-out".into(), None, vec![]))
-                            .text(failure.1.into());
-
-                    }
-                }
-            }
-        }
-    }
-
-    output
-}
 ///
 /// # Example
 /// ```
@@ -101,13 +56,15 @@ fn main() {
         parse_data(&mut stdin.lock())
     };
 
-    let data = parse(&string);
+    let data = parser::parse(&string);
 
     if let Ok(data) = data {
-        let output = format(data);
-        println!("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n{}", output);
+        let output = junit::format(data);
+        junit::print(output);
     } else {
-        println!("Something went wrong{:#?}", data);
+        std::io::stderr()
+            .write_fmt(format_args!("Error during parsing{:#?}", data))
+            .expect("Error during printing of error");
     }
 }
 
