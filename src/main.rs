@@ -48,7 +48,14 @@ fn format(data: Vec<TestModule>) -> xml::Element {
         output.tag(xml::Element::new("testsuite".into(), None, attr));
 
         for test in module.1 {
-            let attr = vec![        ("name".into(), None, test.0.into()), ];
+            let basename = test.0.rfind("::").map(|i| test.0[1+i..].into()).unwrap_or(test.0);
+            let classname = test.0.rfind("::").map(|i| test.0[..i-1].replace("::", ".")).unwrap_or("::".into());
+
+            let attr = vec![
+                       ("name".into(), None, basename.into()),
+                       ("classname".into(), None, classname.into()),
+            ];
+
             let test_xml = output.tag(xml::Element::new("testcase".into(), None, attr));
 
             if test.1 == TestResult::Ignored {
@@ -97,6 +104,8 @@ fn main() {
     if let Ok(data) = data {
         let output = format(data);
         println!("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n{}", output);
+    } else {
+        println!("Something went wrong{:#?}", data);
     }
 }
 

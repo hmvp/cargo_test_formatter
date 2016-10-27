@@ -119,16 +119,15 @@ named!(test_module<TestModule>, chain!(
     move || TestModule(end.0, tests, failures.unwrap_or(vec![]), end.1, end.2, end.3,end.4)
 ));
 
-named!(test_suite<Vec<TestModule> >, delimited!(
-    eol,
-    many1!(test_module),
-    many0!(eof)
+named!(test_suite<Vec<TestModule> >, terminated!(
+    many1!(delimited!(eol, test_module,opt!(tag!("\n")))),
+    eof
 ));
 
 
 pub fn parse(string: &[u8]) -> Result<Vec<TestModule>, String> {
     match test_suite(&string) {
-        IResult::Done(b"\x0A", result) => return Ok(result),
+        IResult::Done(b"", result) => return Ok(result),
         r => return Err(format!("parse failure: {:?}", r).to_string()),
     }
 }
