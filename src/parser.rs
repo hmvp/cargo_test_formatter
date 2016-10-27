@@ -244,7 +244,7 @@ mod tests {
     #[test]
     fn test_test_suite() {
         assert_eq!(test_suite(include_bytes!("../tests/test_suite.txt")),
-      IResult::Done(&b"\x0A"[..], vec![
+      IResult::Done(&b""[..], vec![
           TestModule(TestResult::Ok,vec![
               Test("tests::test_test_case",TestResult::Ok),
               Test("tests::test_test_function",TestResult::Ok)
