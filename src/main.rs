@@ -48,8 +48,10 @@ fn format(data: Vec<TestModule>) -> xml::Element {
         output.tag(xml::Element::new("testsuite".into(), None, attr));
 
         for test in module.1 {
-            let basename = test.0.rfind("::").map(|i| test.0[1+i..].into()).unwrap_or(test.0);
-            let classname = test.0.rfind("::").map(|i| test.0[..i-1].replace("::", ".")).unwrap_or("::".into());
+            let (basename, classname) = test.0
+                .rfind("::")
+                .map(|i| (test.0[2 + i..].into(), test.0[..i].replace("::", ".")))
+                .unwrap_or((test.0, "::".into()));
 
             let attr = vec![
                        ("name".into(), None, basename.into()),
