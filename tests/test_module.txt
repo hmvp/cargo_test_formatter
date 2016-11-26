@@ -3,4 +3,3 @@ test tests::test_test_case ... ok
 test tests::test_test_function ... ok
 
 test result: ok. 1 passed; 2 failed; 3 ignored; 4 measured
-

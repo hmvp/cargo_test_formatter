@@ -1,4 +1,4 @@
-use nom::{IResult, digit, alphanumeric, eol, eof, not_line_ending};
+use nom::{IResult, digit, alphanumeric, eol, not_line_ending};
 
 use std::str;
 use std::str::FromStr;
@@ -20,25 +20,25 @@ named!(number<u32>,
 ///
 /// tests::test_test_case
 named!(test_name<&str>, map_res!(
-          is_not!(b" "),
+          is_not!(" "),
           str::from_utf8
         )
 );
 
 /// ok|FAILED|ignored
 named!(test_result<TestResult>,
-    chain!(
+    do_parse!(
         result: map_res!(
           alphanumeric,
           str::from_utf8
-        ),
-        || if result == "ok" {
+        ) >>
+        ( if result == "ok" {
             TestResult::Ok
         } else if result== "ignored" {
             TestResult::Ignored
         } else {
             TestResult::Failed
-        }
+        })
     )
 );
 
@@ -53,75 +53,74 @@ named!(test_start<u32>, terminated!(
     eol
 ));
 
-named!(test_end<(TestResult,u32, u32, u32, u32)>, chain!(
-    tag!("test result: ") ~
-    result: test_result   ~
-    tag!(". ")            ~
-    passed: number        ~
-    tag!(" passed; ")     ~
-    failed: number        ~
-    tag!(" failed; ")     ~
-    ignored: number       ~
-    tag!(" ignored; ")    ~
-    measured: number      ~
-    tag!(" measured")     ~
-    eol,
-    ||(result, passed, failed, ignored, measured)
+named!(test_end<(TestResult,u32, u32, u32, u32)>, do_parse!(
+    tag!("test result: ") >>
+    result: test_result   >>
+    tag!(". ")            >>
+    passed: number        >>
+    tag!(" passed; ")     >>
+    failed: number        >>
+    tag!(" failed; ")     >>
+    ignored: number       >>
+    tag!(" ignored; ")    >>
+    measured: number      >>
+    tag!(" measured")     >>
+    eol                   >>
+    (result, passed, failed, ignored, measured)
 ));
 
 ///
 /// test tests::test_test_case ... ok\r\n
 named!(test_function<Test>, terminated!(
-    chain!(
-        tag!("test ")      ~
-        name: test_name    ~
-        tag!(" ... ")      ~
-        result: test_result,
-        || Test(name, result)
+    do_parse!(
+        tag!("test ")       >>
+        name: test_name     >>
+        tag!(" ... ")       >>
+        result: test_result >>
+        (Test(name, result))
     ),
     eol
 ));
 
-named!(failure<Failure>, chain!(
-    eol ~
-    name:   terminated!(delimited!(tag!("---- "), test_name , tag!(" stdout ----")), eol) ~
-            tag!("\t") ~
-    stdout: map_res!(take_until!("thread"), str::from_utf8) ~
-    info:   terminated!(map_res!(not_line_ending, str::from_utf8), eol) ~
+named!(failure<Failure>, do_parse!(
+    eol >>
+    name:   terminated!(delimited!(tag!("---- "), test_name , tag!(" stdout ----")), eol) >>
+    tag!("\t") >>
+    stdout: map_res!(take_until!("thread"), str::from_utf8) >>
+    info:   terminated!(map_res!(not_line_ending, str::from_utf8), eol) >>
     opt!(terminated!(
             tag!("note: Run with `RUST_BACKTRACE=1` for a backtrace."), eol
-    )) ~
+    )) >>
     stack: opt!(delimited!(
             terminated!(tag!("stack backtrace:"), eol),
             map_res!(take_until!("\n\n"), str::from_utf8),
             eol
-    )),
-    ||Failure(name, stdout, info, stack.unwrap_or(""))
+    )) >>
+    (Failure(name, stdout, info, stack.unwrap_or("")))
 ));
 
-named!(failures<Vec<Failure> >, chain!(
-    terminated!(tag!("failures:"), eol) ~
-    failure_data: many1!(failure) ~
-    eol ~
-    eol ~
-    tag!("failures:") ~
-    eol ~
-    many1!(delimited!(tag!("    "), not_line_ending, eol)),
-    ||failure_data
+named!(failures<Vec<Failure> >, do_parse!(
+    terminated!(tag!("failures:"), eol) >>
+    failure_data: many1!(failure) >>
+    eol >>
+    eol >>
+    terminated!(tag!("failures:"), eol) >>
+    many1!(delimited!(tag!("    "), not_line_ending, eol)) >>
+    eol >>
+    (failure_data)
 ));
 
-named!(test_module<TestModule>, chain!(
-    test_start ~
-    tests: many0!(test_function) ~
-    eol ~
-    failures: opt!(chain!(f: failures ~ eol, ||f)) ~
-    end: test_end,
-    move || TestModule(end.0, tests, failures.unwrap_or(vec![]), end.1, end.2, end.3,end.4)
+named!(test_module<TestModule>, do_parse!(
+    test_start >>
+    tests: terminated!(many0!(test_function), eol) >>
+    failures: opt!(failures) >>
+    end: test_end >>
+    (TestModule(end.0, tests, failures.unwrap_or(vec![]), end.1, end.2, end.3,end.4))
 ));
 
 named!(test_suite<Vec<TestModule> >, terminated!(
-    many1!(delimited!(eol, test_module,opt!(tag!("\n")))),
-    eof
+    many1!(delimited!(eol, test_module,opt!(eol))),
+    eof!()
 ));
 
 
@@ -202,7 +201,7 @@ mod tests {
     #[test]
     fn test_test_failures() {
         assert_eq!(failures(include_bytes!("../tests/test_failures.txt")),
-      IResult::Done(&b"\x0A"[..], vec![
+      IResult::Done(&b""[..], vec![
           Failure("tests::test_failing",
            "Oh noes!!\n",
            "thread 'tests::test_failing' panicked at 'assertion failed: \
@@ -217,14 +216,14 @@ mod tests {
     #[test]
     fn test_test_module() {
         assert_eq!(test_module(include_bytes!("../tests/test_module.txt")),
-      IResult::Done(&b"\x0A"[..], TestModule(
+      IResult::Done(&b""[..], TestModule(
               TestResult::Ok,vec![Test("tests::test_test_case",
                   TestResult::Ok),
               Test("tests::test_test_function",
                   TestResult::Ok)], vec![],1,2,3,4)));
 
         assert_eq!(test_module(include_bytes!("../tests/test_module2.txt")),
-      IResult::Done(&b"\x0A"[..],
+      IResult::Done(&b""[..],
           TestModule(
               TestResult::Ok,
               vec![

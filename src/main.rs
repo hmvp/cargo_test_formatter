@@ -76,21 +76,17 @@ mod tests {
         println!("Oh noes!!");
         assert!(true);
     }
-    #[test]
-    #[ignore]
-    fn test_failing2() {
-        println!("Again!!");
-        assert_eq!("no", "yes");
-    }
 
     //    #[test]
     //    fn test_failing() {
     //        println!("Oh noes!!");
     //        assert!(false);
     //    }
-    //    #[test]
-    //    fn test_failing2() {
-    //        println!("Again!!");
-    //        assert_eq!("no", "yes");
-    //    }
+
+    #[test]
+    #[ignore]
+    fn test_failing2() {
+        println!("Again!!");
+        assert_eq!("no", "yes");
+    }
 }
