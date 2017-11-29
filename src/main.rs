@@ -35,15 +35,15 @@ pub struct TestModule<'a>(
 
 
 
-fn parse_data<'a, T>(reader: &mut T) -> Vec<u8>
+fn parse_data<'a, T>(reader: &mut T) -> String
 where
     T: io::Read + 'a,
 {
-    let mut buffer = Vec::new();
+    let mut string = String::new();
 
-    reader.read_to_end(&mut buffer).expect("Empty input");
+    reader.read_to_string(&mut string).expect("Empty input");
 
-    buffer
+    string
 }
 
 
