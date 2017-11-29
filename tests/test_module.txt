@@ -2,4 +2,4 @@ running 1 test
 test tests::test_test_case ... ok
 test tests::test_test_function ... ok
 
-test result: ok. 1 passed; 2 failed; 3 ignored; 4 measured
+test result: ok. 1 passed; 2 failed; 3 ignored; 4 measured; 5 filtered out

@@ -20,5 +20,5 @@ failures:
     tests::test_failing2
     tests::test_test_failures
 
-test result: ok. 1 passed; 2 failed; 3 ignored; 4 measured
+test result: ok. 1 passed; 2 failed; 3 ignored; 4 measured; 5 filtered out
 

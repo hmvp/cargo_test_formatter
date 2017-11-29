@@ -22,12 +22,22 @@ pub struct Failure<'a>(&'a str, &'a str, &'a str, &'a str);
 #[derive(Debug, PartialEq)]
 pub struct Test<'a>(&'a str, TestResult);
 #[derive(Debug, PartialEq)]
-pub struct TestModule<'a>(TestResult, Vec<Test<'a>>, Vec<Failure<'a>>, u32, u32, u32, u32);
+pub struct TestModule<'a>(
+    TestResult,
+    Vec<Test<'a>>,
+    Vec<Failure<'a>>,
+    u32,
+    u32,
+    u32,
+    u32,
+    u32,
+);
 
 
 
 fn parse_data<'a, T>(reader: &mut T) -> Vec<u8>
-    where T: io::Read + 'a
+where
+    T: io::Read + 'a,
 {
     let mut buffer = Vec::new();
 

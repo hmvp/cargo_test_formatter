@@ -53,7 +53,7 @@ named!(test_start<u32>, terminated!(
     eol
 ));
 
-named!(test_end<(TestResult,u32, u32, u32, u32)>, do_parse!(
+named!(test_end<(TestResult,u32, u32, u32, u32, u32)>, do_parse!(
     tag!("test result: ") >>
     result: test_result   >>
     tag!(". ")            >>
@@ -64,9 +64,11 @@ named!(test_end<(TestResult,u32, u32, u32, u32)>, do_parse!(
     ignored: number       >>
     tag!(" ignored; ")    >>
     measured: number      >>
-    tag!(" measured")     >>
+    tag!(" measured; ")    >>
+    filtered: number      >>
+    tag!(" filtered out") >>
     eol                   >>
-    (result, passed, failed, ignored, measured)
+    (result, passed, failed, ignored, measured, filtered)
 ));
 
 ///
@@ -115,7 +117,7 @@ named!(test_module<TestModule>, do_parse!(
     tests: terminated!(many0!(test_function), eol) >>
     failures: opt!(failures) >>
     end: test_end >>
-    (TestModule(end.0, tests, failures.unwrap_or(vec![]), end.1, end.2, end.3,end.4))
+    (TestModule(end.0, tests, failures.unwrap_or(vec![]), end.1, end.2, end.3,end.4, end.5))
 ));
 
 named!(test_suite<Vec<TestModule> >, terminated!(
@@ -174,12 +176,12 @@ mod tests {
 
     #[test]
     fn test_test_end() {
-        assert_eq!(test_end(b"test result: ok. 60 passed; 2 failed; 3 ignored; 0 measured\r\n"),
-      IResult::Done(&b""[..], (TestResult::Ok,60,2,3,0)));
-        assert_eq!(test_end(b"test result: ok. 10 passed; 2 failed; 3 ignored; 4 measured\r\n"),
-      IResult::Done(&b""[..], (TestResult::Ok,10,2,3,4)));
-        assert_eq!(test_end(b"test result: FAILED. 60 passed; 2 failed; 3 ignored; 0 measured\r\n"),
-      IResult::Done(&b""[..], (TestResult::Failed,60,2,3,0)));
+        assert_eq!(test_end(b"test result: ok. 60 passed; 2 failed; 3 ignored; 0 measured; 0 filtered out\r\n"),
+      IResult::Done(&b""[..], (TestResult::Ok,60,2,3,0,0)));
+        assert_eq!(test_end(b"test result: ok. 10 passed; 2 failed; 3 ignored; 4 measured; 0 filtered out\r\n"),
+      IResult::Done(&b""[..], (TestResult::Ok,10,2,3,4,0)));
+        assert_eq!(test_end(b"test result: FAILED. 60 passed; 2 failed; 3 ignored; 0 measured; 1 filtered out\r\n"),
+      IResult::Done(&b""[..], (TestResult::Failed,60,2,3,0,1)));
     }
 
     #[test]
@@ -220,7 +222,7 @@ mod tests {
               TestResult::Ok,vec![Test("tests::test_test_case",
                   TestResult::Ok),
               Test("tests::test_test_function",
-                  TestResult::Ok)], vec![],1,2,3,4)));
+                  TestResult::Ok)], vec![],1,2,3,4,5)));
 
         assert_eq!(test_module(include_bytes!("../tests/test_module2.txt")),
       IResult::Done(&b""[..],
@@ -237,7 +239,14 @@ mod tests {
                   Failure("tests::test_failing2",
                       "Again!!\n", "thread \'tests::test_failing2\' panicked at \
                       \'assertion failed: `(left == right)` (left: `no`, right: `yes`)\', src/main.rs:255", "")
-              ],1,2,3,4)));
+              ],1,2,3,4,5)));
+    }
+
+    #[test]
+    fn test_empty_module() {
+        assert_eq!(test_module(include_bytes!("../tests/test_empty_module.txt")),
+      IResult::Done(&b""[..], TestModule(
+              TestResult::Ok,vec![], vec![],1,2,3,4,5)));
     }
 
     #[test]
@@ -255,7 +264,7 @@ mod tests {
               Failure("tests::test_failing2",
               "Again!!\n", "thread \'tests::test_failing2\' panicked at \'assertion failed: \
               `(left == right)` (left: `no`, right: `yes`)\', src/main.rs:255", "")
-          ], 1,2,3,4)
+          ], 1,2,3,4,5)
       ]));
 
     }
