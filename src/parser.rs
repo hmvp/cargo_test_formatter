@@ -64,11 +64,14 @@ named!(test_end<(TestResult,u32, u32, u32, u32, u32)>, do_parse!(
     ignored: number       >>
     tag!(" ignored; ")    >>
     measured: number      >>
-    tag!(" measured; ")    >>
-    filtered: number      >>
-    tag!(" filtered out") >>
+    tag!(" measured")    >>
+    filtered: opt!(delimited!(
+        tag!("; "),
+        number,
+        tag!(" filtered out")
+    )) >>
     eol                   >>
-    (result, passed, failed, ignored, measured, filtered)
+    (result, passed, failed, ignored, measured, filtered.unwrap_or(0))
 ));
 
 ///
@@ -264,7 +267,8 @@ mod tests {
               Failure("tests::test_failing2",
               "Again!!\n", "thread \'tests::test_failing2\' panicked at \'assertion failed: \
               `(left == right)` (left: `no`, right: `yes`)\', src/main.rs:255", "")
-          ], 1,2,3,4,5)
+          ], 1,2,3,4,5),
+          TestModule(TestResult::Ok,vec![],vec![], 0,0,0,0,0)
       ]));
 
     }
