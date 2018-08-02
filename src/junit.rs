@@ -35,7 +35,7 @@ pub fn format(data: Vec<TestModule>) -> xml::Element {
                             .tag(xml::Element::new(
                                 "failure".into(),
                                 None,
-                                vec![("message".into(), None, failure.2.into())],
+                                vec![("message".into(), None, failure.2.clone().into_iter().collect())],
                             ))
                             .cdata(failure.3.into());
                         test_xml
