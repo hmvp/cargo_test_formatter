@@ -84,9 +84,8 @@ named!(failure<&str, Failure>, do_parse!(
     info: terminated!(not_line_ending, eol) >>
     info_left_right: opt!(
         tuple!(tag_s!("  left: "), not_line_ending, tag_s!("\n right: "), take_until_and_consume_s!("\n"))) >>
-    opt!(terminated!(
-            tag_s!("note: Run with `RUST_BACKTRACE=1` for a backtrace."), eol
-    )) >>
+    opt!(
+        tuple!(tag_s!("note: "), not_line_ending, eol)) >>
     stack: opt!(delimited!(
             terminated!(tag_s!("stack backtrace:"), eol),
             take_until_s!("\n\n"),
