@@ -80,19 +80,19 @@ named!(test_function<&str, Test>, do_parse!(
 
 named!(failure<&str, Failure>, do_parse!(
     name:   delimited!(tag_s!("---- "), take_until_and_consume_s!(" stdout ----"), eol) >>
-    tag_s!("\t") >>
-    stdout: take_until_s!("thread") >>
-    info:   terminated!(not_line_ending, eol) >>
-    opt!(terminated!(
-            tag_s!("note: Run with `RUST_BACKTRACE=1` for a backtrace."), eol
-    )) >>
+    stdout: ws!(take_until_s!("thread")) >>
+    info: terminated!(not_line_ending, eol) >>
+    info_left_right: opt!(
+        tuple!(tag_s!("  left: "), not_line_ending, tag_s!("\n right: "), take_until_and_consume_s!("\n"))) >>
+    opt!(
+        tuple!(tag_s!("note: "), not_line_ending, eol)) >>
     stack: opt!(delimited!(
             terminated!(tag_s!("stack backtrace:"), eol),
             take_until_s!("\n\n"),
             eol
     )) >>
     eol >>
-    (Failure(name, stdout, info, stack.unwrap_or("")))
+    (Failure(name, stdout, if let Some(lr) = info_left_right {vec![info, "\n", lr.0, lr.1, lr.2, lr.3]} else {vec![info]}, stack.unwrap_or("")))
 ));
 
 named!(failures<&str, Vec<Failure> >, do_parse!(
@@ -182,8 +182,8 @@ mod tests {
         assert_eq!(failure(include_str!("../tests/test_failure.txt")),
       IResult::Done("", Failure("tests::test_failing2",
        "Again!!\n",
-       "thread 'tests::test_failing2' panicked at 'assertion failed: \
-        `(left == right)` (left: `no`, right: `yes`)', src/main.rs:243",
+       vec!["thread 'tests::test_failing2' panicked at 'assertion failed: `(left == right)`", "\n",
+        "  left: ", "`\"no\"`,", "\n right: ", "`\"yes\"`', src\\main.rs:100:9"],
         "")));
     }
 
@@ -193,12 +193,11 @@ mod tests {
       IResult::Done("", vec![
           Failure("tests::test_failing",
            "Oh noes!!\n",
-           "thread 'tests::test_failing' panicked at 'assertion failed: \
-            false', src/main.rs:250", ""),
+           vec!["thread 'tests::test_failing' panicked at 'assertion failed: false', src\\main.rs:93:12"], ""),
           Failure("tests::test_failing2",
            "Again!!\n",
-           "thread 'tests::test_failing2' panicked at 'assertion failed: \
-            `(left == right)` (left: `no`, right: `yes`)', src/main.rs:255", "")
+           vec!["thread 'tests::test_failing2' panicked at 'assertion failed: `(left == right)`", "\n",
+            "  left: ", "`\"no\"`,", "\n right: ", "`\"yes\"`', src\\main.rs:100:9"], "")
       ]));
     }
 
@@ -224,11 +223,10 @@ mod tests {
               ],
               vec![
                   Failure("tests::test_failing",
-                      "Oh noes!!\n", "thread \'tests::test_failing\' panicked at \
-                      \'assertion failed: false\', src/main.rs:250", ""),
+                      "Oh noes!!\n", vec!["thread 'tests::test_failing' panicked at 'assertion failed: false', src\\main.rs:93:12"], ""),
                   Failure("tests::test_failing2",
-                      "Again!!\n", "thread \'tests::test_failing2\' panicked at \
-                      \'assertion failed: `(left == right)` (left: `no`, right: `yes`)\', src/main.rs:255", "")
+                      "Again!!\n", vec!["thread 'tests::test_failing2' panicked at 'assertion failed: `(left == right)`", "\n",
+                        "  left: ", "`\"no\"`,", "\n right: ", "`\"yes\"`', src\\main.rs:100:9"], "")
               ],1,2,3,4,5)));
     }
 
@@ -236,7 +234,7 @@ mod tests {
     fn test_empty_module() {
         assert_eq!(test_module(include_str!("../tests/test_empty_module.txt")),
       IResult::Done("", TestModule(
-              TestResult::Ok,vec![], vec![],1,2,3,4,5)));
+              TestResult::Ok,vec![], vec![],0,0,0,0,0)));
     }
 
     #[test]
@@ -249,11 +247,40 @@ mod tests {
           ],
           vec![
               Failure("tests::test_failing",
-              "Oh noes!!\n", "thread \'tests::test_failing\' panicked at \'assertion failed: \
-              false\', src/main.rs:250", ""),
+              "Oh noes!!\n", vec!["thread 'tests::test_failing' panicked at 'assertion failed: false', src\\main.rs:93:12"], ""),
               Failure("tests::test_failing2",
-              "Again!!\n", "thread \'tests::test_failing2\' panicked at \'assertion failed: \
-              `(left == right)` (left: `no`, right: `yes`)\', src/main.rs:255", "")
+              "Again!!\n", vec!["thread 'tests::test_failing2' panicked at 'assertion failed: `(left == right)`", "\n",
+                "  left: ", "`\"no\"`,", "\n right: ", "`\"yes\"`', src\\main.rs:100:9"], "")
+          ], 1,2,3,4,5),
+          TestModule(TestResult::Ok,vec![
+              Test("src/hexfile.rs - hexfile::MBHexFile::new (line 102)", TestResult::Ok),
+          ],vec![], 1,0,0,0,0)
+      ]));
+
+    }
+
+    #[test]
+    fn test_test_suite_with_stack_backtrace() {
+        assert_eq!(test_suite(include_str!("../tests/test_suite_with_stack_backtrace.txt")),
+      IResult::Done("", vec![
+          TestModule(TestResult::Ok,vec![
+              Test("tests::test_test_case",TestResult::Ok),
+              Test("tests::test_test_function",TestResult::Ok)
+          ],
+          vec![
+              Failure("tests::test_failing",
+              "Oh noes!!\n", vec!["thread 'tests::test_failing' panicked at 'assertion failed: false', src\\main.rs:93:12"],
+              "   0: std::sys::windows::backtrace::unwind_backtrace
+             at C:\\projects\\rust\\src\\libstd\\sys\\windows\\backtrace\\mod.rs:65
+   1: std::sys_common::backtrace::_print
+             at C:\\projects\\rust\\src\\libstd\\sys_common\\backtrace.rs:71"),
+              Failure("tests::test_failing2",
+              "Again!!\n", vec!["thread 'tests::test_failing2' panicked at 'assertion failed: `(left == right)`", "\n",
+                "  left: ", "`\"no\"`,", "\n right: ", "`\"yes\"`', src\\main.rs:100:9"],
+                "   0: std::sys::windows::backtrace::unwind_backtrace
+             at C:\\projects\\rust\\src\\libstd\\sys\\windows\\backtrace\\mod.rs:65
+   1: std::sys_common::backtrace::_print
+             at C:\\projects\\rust\\src\\libstd\\sys_common\\backtrace.rs:71")
           ], 1,2,3,4,5),
           TestModule(TestResult::Ok,vec![
               Test("src/hexfile.rs - hexfile::MBHexFile::new (line 102)", TestResult::Ok),

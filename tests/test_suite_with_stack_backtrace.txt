@@ -8,14 +8,22 @@ failures:
 ---- tests::test_failing stdout ----
 Oh noes!!
 thread 'tests::test_failing' panicked at 'assertion failed: false', src\main.rs:93:12
-note: Run with `RUST_BACKTRACE=1` for a backtrace.
+stack backtrace:
+   0: std::sys::windows::backtrace::unwind_backtrace
+             at C:\projects\rust\src\libstd\sys\windows\backtrace\mod.rs:65
+   1: std::sys_common::backtrace::_print
+             at C:\projects\rust\src\libstd\sys_common\backtrace.rs:71
 
 ---- tests::test_failing2 stdout ----
 Again!!
 thread 'tests::test_failing2' panicked at 'assertion failed: `(left == right)`
   left: `"no"`,
  right: `"yes"`', src\main.rs:100:9
-note: Run with `RUST_BACKTRACE=1` for a backtrace.
+stack backtrace:
+   0: std::sys::windows::backtrace::unwind_backtrace
+             at C:\projects\rust\src\libstd\sys\windows\backtrace\mod.rs:65
+   1: std::sys_common::backtrace::_print
+             at C:\projects\rust\src\libstd\sys_common\backtrace.rs:71
 
 
 failures:

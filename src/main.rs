@@ -18,7 +18,7 @@ pub enum TestResult {
     Failed,
 }
 #[derive(Debug, PartialEq)]
-pub struct Failure<'a>(&'a str, &'a str, &'a str, &'a str);
+pub struct Failure<'a>(&'a str, &'a str, Vec<&'a str>, &'a str);
 #[derive(Debug, PartialEq)]
 pub struct Test<'a>(&'a str, TestResult);
 #[derive(Debug, PartialEq)]
@@ -78,25 +78,25 @@ fn main() {
     }
 }
 
-#[cfg(test)]
-mod tests {
+// #[cfg(test)]
+// mod tests {
 
-    #[test]
-    fn test_ok() {
-        println!("Oh noes!!");
-        assert!(true);
-    }
+//     #[test]
+//     fn test_ok() {
+//         println!("Oh noes!!");
+//         assert!(true);
+//     }
 
-    //    #[test]
-    //    fn test_failing() {
-    //        println!("Oh noes!!");
-    //        assert!(false);
-    //    }
+//        #[test]
+//        fn test_failing() {
+//            println!("Oh noes!!");
+//            assert!(false);
+//        }
 
-    #[test]
-    #[ignore]
-    fn test_failing2() {
-        println!("Again!!");
-        assert_eq!("no", "yes");
-    }
-}
+//     #[test]
+//     //#[ignore]
+//     fn test_failing2() {
+//         println!("Again!!");
+//         assert_eq!("no", "yes");
+//     }
+// }
